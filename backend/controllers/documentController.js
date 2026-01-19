@@ -1,6 +1,6 @@
 const Document = require('../models/Document');
-const { encryptBuffer, decryptBuffer } = require('../utils/encryption');
-const logger = require('../utils/logger');
+const { encryptBuffer, decryptBuffer, generateSignature, verifySignature } = require('../utils/encryption');
+const { logAction } = require('../services/auditService');
 
 exports.uploadDocument = async (req, res) => {
     if (!req.file) {
@@ -8,41 +8,45 @@ exports.uploadDocument = async (req, res) => {
     }
 
     try {
+        // 1. Generate Integrity Data (Hash & Sign ORIGINAL data)
+        const { hash, signature } = generateSignature(req.file.buffer);
+
+        // 2. Encrypt Data (AES-256-GCM)
         const encrypted = encryptBuffer(req.file.buffer);
 
         const doc = new Document({
             user: req.user.id,
-            filename: req.file.filename || req.file.originalname, // Multer with memory storage uses originalname
+            filename: req.file.filename || req.file.originalname,
             originalName: req.file.originalname,
             mimeType: req.file.mimetype,
-            encryptedContent: encrypted
+            encryptedContent: encrypted,
+            fileHash: hash,
+            digitalSignature: signature
         });
 
         await doc.save();
 
-        logger.info({
-            message: 'File Uploaded',
-            userId: req.user.id,
-            email: req.user.email,
+        // 3. Audit Log
+        await logAction(req.user.id, req.user.email, 'FILE_UPLOAD', req, {
             filename: doc.originalName,
-            timestamp: new Date()
+            docId: doc.id
         });
 
-        res.status(201).json({ msg: 'File uploaded and encrypted successfully', docId: doc.id });
+        res.status(201).json({ msg: 'File uploaded, encrypted, and signed successfully', docId: doc.id });
     } catch (err) {
         console.error(err);
+        await logAction(req.user?.id, req.user?.email, 'UPLOAD_FAILURE', req, { error: err.message });
         res.status(500).json({ msg: 'Server Error' });
     }
 };
 
 exports.getDocuments = async (req, res) => {
     try {
-        // Patient sees own, Doctor sees all (or specific logic)
         let docs;
         if (req.user.role === 'patient') {
             docs = await Document.find({ user: req.user.id }).select('-encryptedContent');
         } else if (req.user.role === 'doctor' || req.user.role === 'admin') {
-            // For demo, doctors see all. In real app, shared specifically.
+            // Doctors can view all for this scope, or selective based on permission
             docs = await Document.find().populate('user', 'email').select('-encryptedContent');
         } else {
             return res.status(403).json({ msg: 'Unauthorized' });
@@ -60,25 +64,52 @@ exports.downloadDocument = async (req, res) => {
         if (!doc) return res.status(404).json({ msg: 'Document not found' });
 
         // Access Control
+        // Patients can only access their own. Doctors can access any (RBAC). 
+        // Admins can see metadata but NOT decrypt content (Implementation Choice: Deny download for Admin)
+        if (req.user.role === 'admin') {
+            await logAction(req.user.id, req.user.email, 'UNAUTHORIZED_ACCESS', req, {
+                reason: 'Admin attempted to view medical record',
+                docId: doc.id
+            });
+            return res.status(403).json({ msg: 'Admins cannot view medical records' });
+        }
+
         if (req.user.role === 'patient' && doc.user.toString() !== req.user.id) {
-            logger.warn({
-                message: 'Unauthorized Access Attempt',
-                userId: req.user.id,
-                docId: doc.id,
-                timestamp: new Date()
+            await logAction(req.user.id, req.user.email, 'UNAUTHORIZED_ACCESS', req, {
+                reason: 'Patient accessed another user file',
+                docId: doc.id
             });
             return res.status(403).json({ msg: 'Access Denied' });
         }
 
-        // Decrypt
-        const decrypted = decryptBuffer(doc.encryptedContent);
+        // 1. Decrypt
+        // If AES-GCM tag check fails, this throws an error (Integrity Check 1)
+        let decrypted;
+        try {
+            decrypted = decryptBuffer(doc.encryptedContent);
+        } catch (decryptErr) {
+            await logAction(req.user.id, req.user.email, 'FILE_TAMPERED', req, {
+                reason: 'Decryption Auth Tag Failed',
+                docId: doc.id
+            });
+            return res.status(500).json({ msg: 'Integrity Error: File Corrupted or Tampered' });
+        }
 
-        logger.info({
-            message: 'File Accessed/Decrypted',
-            userId: req.user.id,
+        // 2. Verify Digital Signature (Integrity Check 2)
+        // We re-compute the hash/sig of the decrypted content and match DB
+        const isValid = verifySignature(decrypted, doc.fileHash, doc.digitalSignature);
+
+        if (!isValid) {
+            await logAction(req.user.id, req.user.email, 'FILE_TAMPERED', req, {
+                reason: 'Digital Signature Mismatch',
+                docId: doc.id
+            });
+            return res.status(500).json({ msg: 'CRITICAL SECURITY ALERT: Digital Signature Mismatch. File has been tampered with.' });
+        }
+
+        await logAction(req.user.id, req.user.email, 'FILE_ACCESS', req, {
             docId: doc.id,
-            accessBy: req.user.role,
-            timestamp: new Date()
+            filename: doc.originalName
         });
 
         res.set('Content-Type', doc.mimeType);

@@ -1,0 +1,19 @@
+Server running on port 5001
+MongoDB Connected
+D:\securityccw-2\backend\controllers\authController.js:7
+    const { email, password, role } = req.body;
+            ^
+
+TypeError: Cannot destructure property 'email' of 'req.body' as it is undefined.
+    at exports.register (D:\securityccw-2\backend\controllers\authController.js:7:13)
+    at Layer.handle [as handle_request] (D:\securityccw-2\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\securityccw-2\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (D:\securityccw-2\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (D:\securityccw-2\backend\node_modules\express\lib\router\layer.js:95:5)
+    at D:\securityccw-2\backend\node_modules\express\lib\router\index.js:284:15
+    at Function.process_params (D:\securityccw-2\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (D:\securityccw-2\backend\node_modules\express\lib\router\index.js:280:10)
+    at Function.handle (D:\securityccw-2\backend\node_modules\express\lib\router\index.js:175:3)
+    at router (D:\securityccw-2\backend\node_modules\express\lib\router\index.js:47:12)
+
+Node.js v20.15.0

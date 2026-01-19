@@ -2,6 +2,7 @@ const User = require('../models/User');
 const passport = require('passport');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
+const { logAction } = require('../services/auditService');
 
 exports.register = async (req, res) => {
     const { email, password, role } = req.body;
@@ -24,9 +25,12 @@ exports.register = async (req, res) => {
         });
 
         await user.save();
+        await logAction(user.id, email, 'REGISTER_SUCCESS', req, { role });
+
         res.status(201).json({ msg: 'User registered successfully' });
     } catch (err) {
         console.error(err);
+        await logAction(null, email, 'REGISTER_FAILURE', req, { error: err.message });
         res.status(500).send('Server Error');
     }
 };
@@ -36,7 +40,7 @@ exports.login = (req, res, next) => {
         if (err) return next(err);
         if (!user) return res.status(400).json({ msg: info.message });
 
-        req.logIn(user, (err) => {
+        req.logIn(user, async (err) => {
             if (err) return next(err);
 
             // If MFA is enabled, require code verification
@@ -70,7 +74,7 @@ exports.setupMFA = async (req, res) => {
     // Generate secret
     const secret = speakeasy.generateSecret({ length: 20 });
 
-    // Save secret to user (temporarily or permanently depends on flow, here we save but don't enable yet)
+    // Save secret to user
     req.user.mfa_secret = secret;
     await req.user.save();
 
@@ -82,14 +86,8 @@ exports.setupMFA = async (req, res) => {
 };
 
 exports.verifyMFA = async (req, res) => {
-    const { token, userId } = req.body; // userId used if not fully logged in yet
+    const { token, userId } = req.body;
     let user = req.user;
-
-    // Implementation for login-phase verification where req.user might not be set in session yet if using stateless or 2-step
-    // Note: Since we use session, req.user is set after successful passport login. 
-    // If we want to enforce MFA *before* full session access, we'd need a temp session or partial auth state.
-    // For this assignment, we will assume the user is "logged in" but needs to verify to access sensitive routes or finalize login.
-    // Simplifying: User logs in -> (if mfa_enabled) -> Frontend sees flag -> Prompts code -> calls verifyMFA.
 
     if (!user && userId) {
         user = await User.findById(userId);
@@ -100,16 +98,19 @@ exports.verifyMFA = async (req, res) => {
     const verified = speakeasy.totp.verify({
         secret: user.mfa_secret.base32,
         encoding: 'base32',
-        token: token
+        token: token,
+        window: 1 // Allow 30sec skew
     });
 
     if (verified) {
-        user.mfa_enabled = true; // Enable if not already
+        user.mfa_enabled = true;
         await user.save();
 
-        // Ensure session is fully valid/authorized for sensitive actions if needed
+        await logAction(user.id, user.email, 'MFA_SUCCESS', req);
+
         res.json({ msg: 'MFA Verified', mfa_verified: true });
     } else {
+        await logAction(user.id, user.email, 'MFA_FAILURE', req);
         res.status(400).json({ msg: 'Invalid Token' });
     }
 };
@@ -122,7 +123,12 @@ exports.checkSession = (req, res) => {
     }
 };
 
-exports.logout = (req, res) => {
+exports.logout = async (req, res, next) => {
+    const user = req.user;
+    if (user) {
+        await logAction(user.id, user.email, 'LOGOUT', req);
+    }
+
     req.logout((err) => {
         if (err) return next(err);
         res.json({ msg: 'Logged out' });

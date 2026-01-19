@@ -17,14 +17,12 @@ const { limiter, loginLimiter } = require('./middleware/securityMiddleware');
 const authRoutes = require('./routes/authRoutes');
 const documentRoutes = require('./routes/documentRoutes');
 
-app.use('/api/auth/login', loginLimiter); // Strict limit for login
-app.use('/api', limiter); // General API limit
-app.use('/api/auth', authRoutes);
-app.use('/api/documents', documentRoutes);
-
 // Middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -44,6 +42,11 @@ app.use(session({
 // Passport Middleware
 app.use(passport.initialize());
 app.use(passport.session());
+
+app.use('/api/auth/login', loginLimiter); // Strict limit for login
+app.use('/api', limiter); // General API limit
+app.use('/api/auth', authRoutes);
+app.use('/api/documents', documentRoutes);
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI)

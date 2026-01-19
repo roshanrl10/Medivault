@@ -22,9 +22,14 @@ const DocumentSchema = new mongoose.Schema({
         type: Buffer,
         required: true
     },
-    iv: {
-        type: Buffer, // Stored with content in utils usually, but explicit here if needed. 
-        // Utils implementation prepends IV, so we just store the full blob in encryptedContent
+    // Integrity Fields
+    fileHash: {
+        type: String,
+        required: true
+    },
+    digitalSignature: {
+        type: String,
+        required: true
     }
 }, { timestamps: true });
 
