@@ -12,16 +12,11 @@ const Input = ({
 
     return (
         <div className={`space-y-1 ${className}`}>
-            {label && <label className="text-sm font-medium text-brand-300 ml-1">{label}</label>}
+            {label && <label className="text-sm font-semibold text-slate-700 ml-1">{label}</label>}
             <div className="relative group">
-                <div className={`
-          absolute inset-0 rounded-xl transition-all duration-300 pointer-events-none
-          ${isFocused ? 'bg-brand-500/10 ring-1 ring-brand-500/50' : 'bg-brand-900/20 hover:bg-brand-900/30'}
-        `} />
-
                 <div className="relative flex items-center">
                     {Icon && (
-                        <div className={`absolute left-4 transition-colors duration-300 ${isFocused ? 'text-brand-400' : 'text-slate-500'}`}>
+                        <div className={`absolute left-4 transition-colors duration-300 ${isFocused ? 'text-brand-600' : 'text-slate-400'}`}>
                             <Icon size={20} />
                         </div>
                     )}
@@ -37,19 +32,21 @@ const Input = ({
                             props.onBlur?.(e);
                         }}
                         className={`
-              w-full bg-transparent border border-white/5 rounded-xl px-4 py-3 text-white placeholder-slate-500
-              focus:outline-none focus:border-brand-500/50 transition-all duration-300
+              w-full bg-white border rounded-lg px-4 py-3 text-slate-900 placeholder-slate-400
+              transition-all duration-300 shadow-sm
               ${Icon ? 'pl-12' : ''}
-              ${error ? 'border-red-500/50 focus:border-red-500' : ''}
+              ${error
+                                ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
+                                : 'border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10'}
             `}
                     />
                 </div>
             </div>
             {error && (
                 <motion.p
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-xs text-red-400 ml-1"
+                    className="text-xs text-red-500 ml-1 font-medium"
                 >
                     {error}
                 </motion.p>

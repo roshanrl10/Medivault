@@ -2,11 +2,11 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 const variants = {
-    primary: "bg-brand-500 hover:bg-brand-400 text-white shadow-[0_0_20px_rgba(14,165,233,0.3)] hover:shadow-[0_0_30px_rgba(14,165,233,0.5)] border-transparent",
-    secondary: "bg-brand-900/50 hover:bg-brand-800/50 text-brand-100 border-brand-700/50 hover:border-brand-500",
-    outline: "bg-transparent border-brand-700 text-brand-300 hover:border-brand-500 hover:text-white",
-    ghost: "bg-transparent hover:bg-white/5 text-brand-300 hover:text-white border-transparent",
-    danger: "bg-red-500/10 hover:bg-red-500/20 text-red-500 border-red-500/20 hover:border-red-500/50"
+    primary: "bg-brand-600 hover:bg-brand-700 text-white shadow-md hover:shadow-lg border-transparent",
+    secondary: "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300",
+    outline: "bg-transparent border-2 border-brand-600 text-brand-600 hover:bg-brand-50",
+    ghost: "bg-transparent hover:bg-brand-50 text-brand-600 hover:text-brand-700 border-transparent",
+    danger: "bg-red-50 hover:bg-red-100 text-red-600 border border-red-200"
 };
 
 const sizes = {
@@ -29,7 +29,7 @@ const Button = ({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className={`
-        relative flex items-center justify-center gap-2 rounded-xl font-medium transition-all duration-300 border
+        relative flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-300 border
         disabled:opacity-50 disabled:cursor-not-allowed
         ${variants[variant]}
         ${sizes[size]}

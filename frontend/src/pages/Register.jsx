@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Stethoscope } from 'lucide-react';
+import { Mail, Lock, User, Stethoscope, CheckCircle, XCircle } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import zxcvbn from 'zxcvbn';
@@ -43,12 +43,12 @@ const Register = () => {
 
     const getStrengthColor = () => {
         switch (score) {
-            case 0: return 'bg-slate-700';
+            case 0: return 'bg-slate-200';
             case 1: return 'bg-red-500';
             case 2: return 'bg-orange-500';
             case 3: return 'bg-yellow-500';
             case 4: return 'bg-green-500';
-            default: return 'bg-slate-700';
+            default: return 'bg-slate-200';
         }
     };
 
@@ -64,32 +64,27 @@ const Register = () => {
     };
 
     return (
-        <div className="flex min-h-screen bg-[#0f172a] text-white overflow-hidden relative">
-            {/* Background Decorations */}
-            <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-brand-900/30 rounded-full blur-[150px]" />
-            <div className="absolute bottom-[-20%] left-[-10%] w-[60%] h-[60%] bg-accent-600/20 rounded-full blur-[150px]" />
-
-            <div className="w-full max-w-md mx-auto flex items-center justify-center p-4 relative z-10">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="glass-card p-8 md:p-10 rounded-3xl w-full"
-                >
+        <div className="flex min-h-screen bg-slate-50 items-center justify-center p-4">
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden"
+            >
+                <div className="bg-white p-8 md:p-10">
                     <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                            Join Medivault
-                        </h2>
-                        <p className="text-slate-400 mt-2">Secure your medical future today.</p>
+                        <h2 className="text-2xl font-bold text-slate-900">Create Account</h2>
+                        <p className="text-slate-500 mt-2">Join Medivault securely today</p>
                     </div>
 
                     {error && (
-                        <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6 text-sm">
+                        <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-6 text-sm flex items-center gap-2">
+                            <XCircle size={16} />
                             {error}
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    <form onSubmit={handleSubmit} className="space-y-4">
                         <Input
                             label="Email Address"
                             type="email"
@@ -111,29 +106,36 @@ const Register = () => {
                                 required
                             />
                             {formData.password && (
-                                <div className="mt-2 flex items-center gap-2">
-                                    <div className="h-1 flex-1 bg-slate-700 rounded-full overflow-hidden">
-                                        <div
-                                            className={`h-full transition-all duration-300 ${getStrengthColor()}`}
-                                            style={{ width: `${(score + 1) * 20}%` }}
+                                <div className="mt-3">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-xs font-medium text-slate-500">Security Strength</span>
+                                        <span className={`text-xs font-bold ${score <= 1 ? 'text-red-500' :
+                                                score === 2 ? 'text-orange-500' :
+                                                    score === 3 ? 'text-yellow-600' : 'text-green-600'
+                                            }`}>{getStrengthLabel()}</span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                        <motion.div
+                                            className={`h-full ${getStrengthColor()}`}
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${(score + 1) * 20}%` }}
                                         />
                                     </div>
-                                    <span className="text-xs text-slate-400 min-w-[60px] text-right">{getStrengthLabel()}</span>
                                 </div>
                             )}
                         </div>
 
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-brand-300 ml-1">Account Type</label>
+                        <div className="pt-2">
+                            <label className="text-sm font-semibold text-slate-700 ml-1 mb-2 block">I am a...</label>
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, role: 'patient' })}
                                     className={`
-                                        p-4 rounded-xl border flex flex-col items-center gap-2 transition-all duration-300
+                                        p-4 rounded-xl border flex flex-col items-center gap-2 transition-all duration-200
                                         ${formData.role === 'patient'
-                                            ? 'bg-brand-500/20 border-brand-500 text-white'
-                                            : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'}
+                                            ? 'bg-brand-50 border-brand-500 text-brand-700 ring-1 ring-brand-500'
+                                            : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'}
                                     `}
                                 >
                                     <User size={24} />
@@ -143,10 +145,10 @@ const Register = () => {
                                     type="button"
                                     onClick={() => setFormData({ ...formData, role: 'doctor' })}
                                     className={`
-                                        p-4 rounded-xl border flex flex-col items-center gap-2 transition-all duration-300
+                                        p-4 rounded-xl border flex flex-col items-center gap-2 transition-all duration-200
                                         ${formData.role === 'doctor'
-                                            ? 'bg-brand-500/20 border-brand-500 text-white'
-                                            : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'}
+                                            ? 'bg-brand-50 border-brand-500 text-brand-700 ring-1 ring-brand-500'
+                                            : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300'}
                                     `}
                                 >
                                     <Stethoscope size={24} />
@@ -155,19 +157,20 @@ const Register = () => {
                             </div>
                         </div>
 
-                        <Button type="submit" className="w-full mt-4" isLoading={loading}>
+                        <Button type="submit" className="w-full mt-6" size="lg" isLoading={loading}>
                             Create Account
                         </Button>
                     </form>
-
-                    <div className="mt-8 text-center text-sm text-slate-400">
+                </div>
+                <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 text-center">
+                    <p className="text-sm text-slate-600">
                         Already have an account?{' '}
-                        <Link to="/login" className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
+                        <Link to="/login" className="font-semibold text-brand-600 hover:text-brand-700">
                             Sign In
                         </Link>
-                    </div>
-                </motion.div>
-            </div>
+                    </p>
+                </div>
+            </motion.div>
         </div>
     );
 };

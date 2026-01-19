@@ -8,5 +8,6 @@ router.get('/setup-mfa', authController.setupMFA);
 router.post('/verify-mfa', authController.verifyMFA);
 router.get('/session', authController.checkSession);
 router.post('/logout', authController.logout);
+router.get('/logs', authController.getAuditLogs);
 
 module.exports = router;

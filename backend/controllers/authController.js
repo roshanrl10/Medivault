@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const AuditLog = require('../models/AuditLog');
 const passport = require('passport');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
@@ -133,4 +134,22 @@ exports.logout = async (req, res, next) => {
         if (err) return next(err);
         res.json({ msg: 'Logged out' });
     });
+};
+
+exports.getAuditLogs = async (req, res) => {
+    if (!req.user) return res.status(401).send('Unauthorized');
+
+    try {
+        let logs;
+        if (req.user.role === 'admin') {
+            logs = await AuditLog.find().sort({ createdAt: -1 }).limit(100);
+        } else {
+            // Users see their own logs
+            logs = await AuditLog.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(50);
+        }
+        res.json(logs);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
 };

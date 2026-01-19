@@ -5,12 +5,14 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Layout from './components/Layout';
+import Landing from './pages/Landing';
+import AuditLogs from './pages/AuditLogs';
 
 const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
     if (loading) return (
-        <div className="flex items-center justify-center min-h-screen bg-[#0f172a] text-brand-400">
-            <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="flex items-center justify-center min-h-screen bg-slate-50 text-brand-600">
+            <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
         </div>
     );
     return user ? children : <Navigate to="/login" />;
@@ -47,8 +49,15 @@ const AnimatedRoutes = () => {
                         </Layout>
                     </ProtectedRoute>
                 } />
+                <Route path="/logs" element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <AuditLogs />
+                        </Layout>
+                    </ProtectedRoute>
+                } />
 
-                <Route path="/" element={<Navigate to="/dashboard" />} />
+                <Route path="/" element={<Landing />} />
             </Routes>
         </AnimatePresence>
     );

@@ -1,91 +1,87 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, FileText, Settings, LogOut, ShieldCheck, User } from 'lucide-react';
+import { LayoutDashboard, FileText, Settings, LogOut, ShieldCheck, User, Activity, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Button from './ui/Button';
 
 const Layout = ({ children }) => {
     const { user, logout } = useAuth();
-    const location = useLocation();
 
-    const navItems = [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-        { icon: FileText, label: 'Documents', path: '/documents' },
+    const navItems = user?.role === 'doctor' ? [
+        { icon: Users, label: 'Authorized Patients', path: '/dashboard' },
+        { icon: FileText, label: 'My Notes', path: '/notes' }, // Placeholder
         { icon: Settings, label: 'Settings', path: '/settings' },
+    ] : [
+        { icon: LayoutDashboard, label: 'My Records', path: '/dashboard' },
+        { icon: Users, label: 'Shared with Doctors', path: '/shared' }, // Placeholder/Modal
+        { icon: Activity, label: 'Activity Logs', path: '/logs' },
+        { icon: Settings, label: 'Security Settings', path: '/settings' },
     ];
 
     return (
-        <div className="min-h-screen flex bg-[#0f172a] text-slate-100 overflow-hidden relative">
-            {/* Background Gradients */}
-            <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-brand-900/20 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent-600/10 rounded-full blur-[120px]" />
-            </div>
+        <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+            {/* Sidebar - Fixed Left */}
+            <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 z-30 flex flex-col transition-transform duration-300 ease-in-out transform translate-x-0">
 
-            {/* Sidebar */}
-            <aside className="w-64 glass border-r border-white/5 z-20 flex flex-col h-screen fixed">
-                <div className="p-8 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-500 to-accent-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
-                        <ShieldCheck className="text-white" size={24} />
+                {/* Logo Area */}
+                <div className="h-20 flex items-center px-8 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                        <ShieldCheck className="text-brand-600" size={28} />
+                        <span className="text-xl font-bold tracking-tight text-slate-800">Medivault</span>
                     </div>
-                    <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                        Medivault
-                    </span>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-2 mt-8">
+                {/* Navigation */}
+                <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
                     {navItems.map((item) => (
                         <NavLink
                             key={item.path}
                             to={item.path}
                             className={({ isActive }) => `
-                relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group
-                ${isActive ? 'text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'}
+                flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group font-medium text-sm
+                ${isActive
+                                    ? 'bg-brand-50 text-brand-700 shadow-sm ring-1 ring-brand-200'
+                                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
               `}
                         >
                             {({ isActive }) => (
                                 <>
-                                    {isActive && (
-                                        <motion.div
-                                            layoutId="sidebar-active"
-                                            className="absolute inset-0 bg-gradient-to-r from-brand-500/20 to-transparent rounded-xl border-l-2 border-brand-500"
-                                            initial={false}
-                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                        />
-                                    )}
-                                    <item.icon size={20} className={isActive ? 'text-brand-400' : 'text-slate-500 group-hover:text-slate-300'} />
-                                    <span className="relative z-10 font-medium">{item.label}</span>
+                                    <item.icon size={20} className={isActive ? 'text-brand-600' : 'text-slate-400 group-hover:text-slate-600'} />
+                                    <span>{item.label}</span>
                                 </>
                             )}
                         </NavLink>
                     ))}
                 </nav>
 
-                <div className="p-4 border-t border-white/5">
-                    <div className="glass-card rounded-xl p-4 mb-4 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-300">
+                {/* User Profile & Logout - Bottom Fixed */}
+                <div className="p-6 border-t border-slate-100 bg-white space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                             <User size={20} />
                         </div>
                         <div className="overflow-hidden">
-                            <p className="text-sm font-medium text-white truncate">{user?.email || 'User'}</p>
-                            <p className="text-xs text-slate-400 truncate">Secured Session</p>
+                            <p className="text-sm font-semibold text-slate-700 truncate">{user?.email}</p>
+                            <p className="text-xs text-slate-400 truncate capitalize">{user?.role}</p>
                         </div>
                     </div>
+
                     <Button
-                        variant="ghost"
-                        className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        variant="danger"
+                        className="w-full justify-center shadow-lg shadow-red-500/20"
                         onClick={logout}
-                        icon={LogOut}
                     >
                         Sign Out
                     </Button>
                 </div>
             </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 ml-64 relative z-10 p-8">
-                {children}
+            {/* Main Content Wrapper - Offset for Sidebar */}
+            <main className="flex-1 ml-64 p-4 md:p-8 bg-slate-50 min-h-screen">
+                <div className="max-w-7xl mx-auto h-full">
+                    {children}
+                </div>
             </main>
         </div>
     );

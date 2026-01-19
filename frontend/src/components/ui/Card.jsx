@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 const Card = ({ children, className = '', hover = false, ...props }) => {
     return (
         <motion.div
-            whileHover={hover ? { y: -5 } : {}}
+            whileHover={hover ? { y: -4 } : {}}
             className={`
-        glass-card rounded-2xl border border-white/5 p-6
-        ${hover ? 'hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:border-brand-500/30 transition-all duration-500' : ''}
+        bg-white rounded-xl border border-slate-200 p-6 shadow-sm
+        ${hover ? 'hover:shadow-md transition-shadow duration-300' : ''}
         ${className}
       `}
             {...props}
