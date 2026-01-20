@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard';
 import Layout from './components/Layout';
 import Landing from './pages/Landing';
 import AuditLogs from './pages/AuditLogs';
+import Settings from './pages/Settings';
+import SharedDocuments from './pages/SharedDocuments';
 
 const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
@@ -43,9 +45,7 @@ const AnimatedRoutes = () => {
                 <Route path="/settings" element={
                     <ProtectedRoute>
                         <Layout>
-                            <div className="flex items-center justify-center h-[50vh] text-slate-400">
-                                Settings Module Coming Soon
-                            </div>
+                            <Settings />
                         </Layout>
                     </ProtectedRoute>
                 } />
@@ -53,6 +53,14 @@ const AnimatedRoutes = () => {
                     <ProtectedRoute>
                         <Layout>
                             <AuditLogs />
+                        </Layout>
+                    </ProtectedRoute>
+                } />
+
+                <Route path="/shared" element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <SharedDocuments />
                         </Layout>
                     </ProtectedRoute>
                 } />

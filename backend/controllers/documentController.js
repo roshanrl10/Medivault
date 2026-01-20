@@ -45,13 +45,64 @@ exports.getDocuments = async (req, res) => {
         let docs;
         if (req.user.role === 'patient') {
             docs = await Document.find({ user: req.user.id }).select('-encryptedContent');
-        } else if (req.user.role === 'doctor' || req.user.role === 'admin') {
-            // Doctors can view all for this scope, or selective based on permission
+        } else if (req.user.role === 'doctor') {
+            // Doctors can ONLY see documents explicitly shared with them
+            docs = await Document.find({ sharedWith: req.user.id })
+                .populate('user', 'email')
+                .select('-encryptedContent');
+        } else if (req.user.role === 'admin') {
+            // Admins can see metadata of all docs
             docs = await Document.find().populate('user', 'email').select('-encryptedContent');
         } else {
             return res.status(403).json({ msg: 'Unauthorized' });
         }
         res.json(docs);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.shareDocument = async (req, res) => {
+    const { doctorId } = req.body;
+    try {
+        const doc = await Document.findById(req.params.id);
+        if (!doc) return res.status(404).json({ msg: 'Document not found' });
+
+        // Only owner can share
+        if (doc.user.toString() !== req.user.id) {
+            return res.status(403).json({ msg: 'Not authorized' });
+        }
+
+        if (!doc.sharedWith.includes(doctorId)) {
+            doc.sharedWith.push(doctorId);
+            await doc.save();
+            await logAction(req.user.id, req.user.email, 'DOC_SHARED', req, { docId: doc.id, doctorId });
+        }
+
+        res.json(doc);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.revokeAccess = async (req, res) => {
+    const { doctorId } = req.body;
+    try {
+        const doc = await Document.findById(req.params.id);
+        if (!doc) return res.status(404).json({ msg: 'Document not found' });
+
+        // Only owner can revoke
+        if (doc.user.toString() !== req.user.id) {
+            return res.status(403).json({ msg: 'Not authorized' });
+        }
+
+        doc.sharedWith = doc.sharedWith.filter(id => id.toString() !== doctorId);
+        await doc.save();
+        await logAction(req.user.id, req.user.email, 'ACCESS_REVOKED', req, { docId: doc.id, doctorId });
+
+        res.json(doc);
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
@@ -64,8 +115,6 @@ exports.downloadDocument = async (req, res) => {
         if (!doc) return res.status(404).json({ msg: 'Document not found' });
 
         // Access Control
-        // Patients can only access their own. Doctors can access any (RBAC). 
-        // Admins can see metadata but NOT decrypt content (Implementation Choice: Deny download for Admin)
         if (req.user.role === 'admin') {
             await logAction(req.user.id, req.user.email, 'UNAUTHORIZED_ACCESS', req, {
                 reason: 'Admin attempted to view medical record',
@@ -74,9 +123,12 @@ exports.downloadDocument = async (req, res) => {
             return res.status(403).json({ msg: 'Admins cannot view medical records' });
         }
 
-        if (req.user.role === 'patient' && doc.user.toString() !== req.user.id) {
+        const isOwner = doc.user.toString() === req.user.id;
+        const isShared = doc.sharedWith.includes(req.user.id);
+
+        if (!isOwner && !isShared) {
             await logAction(req.user.id, req.user.email, 'UNAUTHORIZED_ACCESS', req, {
-                reason: 'Patient accessed another user file',
+                reason: 'User accessed unshared file',
                 docId: doc.id
             });
             return res.status(403).json({ msg: 'Access Denied' });

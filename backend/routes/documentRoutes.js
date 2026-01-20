@@ -11,5 +11,7 @@ const upload = multer({ storage: storage });
 router.post('/upload', ensureAuthenticated, upload.single('file'), documentController.uploadDocument);
 router.get('/', ensureAuthenticated, documentController.getDocuments);
 router.get('/:id', ensureAuthenticated, documentController.downloadDocument);
+router.post('/:id/share', ensureAuthenticated, documentController.shareDocument);
+router.post('/:id/revoke', ensureAuthenticated, documentController.revokeAccess);
 
 module.exports = router;

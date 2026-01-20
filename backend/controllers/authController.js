@@ -96,23 +96,34 @@ exports.verifyMFA = async (req, res) => {
 
     if (!user) return res.status(401).json({ msg: 'Unauthorized' });
 
+    if (!user.mfa_secret) {
+        return res.status(400).json({ msg: 'MFA setup not initiated' });
+    }
+
+    console.log(`[MFA Verification DEBUG] User: ${user.email}`);
+    console.log(`[MFA Verification DEBUG] Token Received: ${token}`);
+    console.log(`[MFA Verification DEBUG] Secret (base32): ${user.mfa_secret.base32}`);
+
     const verified = speakeasy.totp.verify({
         secret: user.mfa_secret.base32,
         encoding: 'base32',
         token: token,
-        window: 1 // Allow 30sec skew
+        window: 6 // Allow 3 minutes skew
     });
+
+    console.log(`[MFA Verification DEBUG] Verification Result: ${verified}`);
 
     if (verified) {
         user.mfa_enabled = true;
         await user.save();
 
-        await logAction(user.id, user.email, 'MFA_SUCCESS', req);
+        // Log Success
+        await logAction(user._id, user.email, 'MFA_ENABLED', req);
 
-        res.json({ msg: 'MFA Verified', mfa_verified: true });
+        res.json({ msg: 'MFA Enabled Successfully' });
     } else {
         await logAction(user.id, user.email, 'MFA_FAILURE', req);
-        res.status(400).json({ msg: 'Invalid Token' });
+        res.status(400).json({ msg: 'Invalid token' });
     }
 };
 
@@ -148,6 +159,16 @@ exports.getAuditLogs = async (req, res) => {
             logs = await AuditLog.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(50);
         }
         res.json(logs);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.getDoctors = async (req, res) => {
+    try {
+        const doctors = await User.find({ role: 'doctor' }).select('email');
+        res.json(doctors);
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
