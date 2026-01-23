@@ -89,4 +89,5 @@ const sslOptions = {
 
 https.createServer(sslOptions, app).listen(PORT, () => {
     console.log(`✅ Secure Server running on port ${PORT} (https://localhost:${PORT})`);
+    console.log(`[Server] Timestamp: ${new Date().toISOString()}`); // Force restart
 });

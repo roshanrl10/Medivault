@@ -8,8 +8,11 @@ exports.uploadDocument = async (req, res) => {
     }
 
     try {
+        console.log(`[Upload] File received: ${req.file.originalname}, MIME: ${req.file.mimetype}, Size: ${req.file.size}`); // DEBUG
+
         // 1. Validate Magic Bytes (Signature)
         const fileSignature = req.file.buffer.toString('hex', 0, 4).toUpperCase();
+        console.log(`[Upload] Magic Bytes: ${fileSignature}`); // DEBUG
         const validSignatures = {
             '25504446': 'application/pdf', // %PDF
             'FFD8FFE0': 'image/jpeg',
