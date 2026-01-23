@@ -8,7 +8,40 @@ exports.uploadDocument = async (req, res) => {
     }
 
     try {
-        // 1. Generate Integrity Data (Hash & Sign ORIGINAL data)
+        // 1. Validate Magic Bytes (Signature)
+        const fileSignature = req.file.buffer.toString('hex', 0, 4).toUpperCase();
+        const validSignatures = {
+            '25504446': 'application/pdf', // %PDF
+            'FFD8FFE0': 'image/jpeg',
+            'FFD8FFE1': 'image/jpeg',
+            'FFD8FFEE': 'image/jpeg',
+            '89504E47': 'image/png'
+        };
+
+        let isValidSignature = false;
+        // Simple prefix check
+        for (const sig in validSignatures) {
+            if (fileSignature.startsWith(sig)) {
+                isValidSignature = true;
+                break;
+            }
+        }
+
+        // Strict PNG check
+        if (!isValidSignature && fileSignature === '89504E47') isValidSignature = true;
+
+        if (!isValidSignature) {
+            // Fallback for some JPEG variations or extend list as needed
+            if (req.file.mimetype === 'image/jpeg' && fileSignature.startsWith('FFD8')) {
+                isValidSignature = true;
+            }
+        }
+
+        if (!isValidSignature) {
+            return res.status(400).json({ msg: 'Security Alert: File signature mismatch. Upload rejected.' });
+        }
+
+        // 2. Generate Integrity Data (Hash & Sign ORIGINAL data)
         const { hash, signature } = generateSignature(req.file.buffer);
 
         // 2. Encrypt Data (AES-256-GCM)
