@@ -34,7 +34,7 @@ exports.register = async (req, res) => {
     } catch (err) {
         console.error(err);
         await logAction(null, email, 'REGISTER_FAILURE', req, { error: err.message });
-        res.status(500).send('Server Error');
+        res.status(500).json({ msg: 'Server Error: ' + err.message });
     }
 };
 
