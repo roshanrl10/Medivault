@@ -16,5 +16,6 @@ router.get('/', ensureAuthenticated, documentController.getDocuments);
 router.get('/:id', ensureAuthenticated, documentController.downloadDocument);
 router.post('/:id/share', ensureAuthenticated, documentController.shareDocument);
 router.post('/:id/revoke', ensureAuthenticated, documentController.revokeAccess);
+router.delete('/:id', ensureAuthenticated, documentController.deleteDocument);
 
 module.exports = router;

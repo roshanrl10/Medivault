@@ -5,10 +5,9 @@ const algorithm = 'aes-256-gcm';
 // For assignment: "Never store the encryption key in the same table as the data. Use an environment variable."
 const getMasterKey = () => {
     if (process.env.MASTER_KEY) {
+        // console.log('Master Key Loaded:', process.env.MASTER_KEY.substring(0, 10) + '...'); // DEBUG
         return Buffer.from(process.env.MASTER_KEY, 'hex');
     }
-    // Fallback logic for dev if env missing, but we assume env is set or we derive deterministically for stability across restarts
-    // Ideally this is a random 32 byte hex string in .env
     return crypto.createHash('sha256').update(process.env.SESSION_SECRET || 'dev_secret').digest();
 };
 

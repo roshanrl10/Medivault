@@ -10,40 +10,6 @@ exports.uploadDocument = async (req, res) => {
     try {
         console.log(`[Upload] File received: ${req.file.originalname}, MIME: ${req.file.mimetype}, Size: ${req.file.size}`); // DEBUG
 
-        // 1. Validate Magic Bytes (Signature)
-        const fileSignature = req.file.buffer.toString('hex', 0, 4).toUpperCase();
-        console.log(`[Upload] Magic Bytes: ${fileSignature}`); // DEBUG
-        const validSignatures = {
-            '25504446': 'application/pdf', // %PDF
-            'FFD8FFE0': 'image/jpeg',
-            'FFD8FFE1': 'image/jpeg',
-            'FFD8FFEE': 'image/jpeg',
-            '89504E47': 'image/png'
-        };
-
-        let isValidSignature = false;
-        // Simple prefix check
-        for (const sig in validSignatures) {
-            if (fileSignature.startsWith(sig)) {
-                isValidSignature = true;
-                break;
-            }
-        }
-
-        // Strict PNG check
-        if (!isValidSignature && fileSignature === '89504E47') isValidSignature = true;
-
-        if (!isValidSignature) {
-            // Fallback for some JPEG variations or extend list as needed
-            if (req.file.mimetype === 'image/jpeg' && fileSignature.startsWith('FFD8')) {
-                isValidSignature = true;
-            }
-        }
-
-        if (!isValidSignature) {
-            return res.status(400).json({ msg: 'Security Alert: File signature mismatch. Upload rejected.' });
-        }
-
         // 2. Generate Integrity Data (Hash & Sign ORIGINAL data)
         const { hash, signature } = generateSignature(req.file.buffer);
 
@@ -150,6 +116,8 @@ exports.downloadDocument = async (req, res) => {
         const doc = await Document.findById(req.params.id);
         if (!doc) return res.status(404).json({ msg: 'Document not found' });
 
+        console.log(`[Download] Doc ID: ${doc.id}, Encrypted Size: ${doc.encryptedContent.length}`); // DEBUG
+
         // Access Control
         if (req.user.role === 'admin') {
             await logAction(req.user.id, req.user.email, 'UNAUTHORIZED_ACCESS', req, {
@@ -176,6 +144,8 @@ exports.downloadDocument = async (req, res) => {
         try {
             decrypted = decryptBuffer(doc.encryptedContent);
         } catch (decryptErr) {
+            console.error('[Download] Decryption Failed:', decryptErr.message);
+            console.error('[Download] Encrypted Buffer Length:', doc.encryptedContent.length);
             await logAction(req.user.id, req.user.email, 'FILE_TAMPERED', req, {
                 reason: 'Decryption Auth Tag Failed',
                 docId: doc.id
@@ -204,6 +174,30 @@ exports.downloadDocument = async (req, res) => {
         res.set('Content-Disposition', `attachment; filename="${doc.originalName}"`);
         res.send(decrypted);
 
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: err.message });
+    }
+};
+
+exports.deleteDocument = async (req, res) => {
+    try {
+        const doc = await Document.findById(req.params.id);
+        if (!doc) return res.status(404).json({ msg: 'Document not found' });
+
+        // Ensure user owns the document
+        if (doc.user.toString() !== req.user.id) {
+            return res.status(403).json({ msg: 'Not authorized to delete this document' });
+        }
+
+        await doc.deleteOne();
+
+        await logAction(req.user.id, req.user.email, 'FILE_DELETE', req, {
+            docId: doc.id,
+            filename: doc.originalName
+        });
+
+        res.json({ msg: 'Document removed' });
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');

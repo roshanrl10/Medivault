@@ -53,7 +53,7 @@ const PatientDashboard = () => {
 
     const handleDownload = async (docId, filename) => {
         try {
-            const response = await api.get(`/documents/download/${docId}`, {
+            const response = await api.get(`/documents/${docId}`, {
                 responseType: 'blob',
             });
             const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -64,7 +64,28 @@ const PatientDashboard = () => {
             link.click();
             link.remove();
         } catch (err) {
-            alert('Integrity Check Failed: File may be tampered.');
+            let msg = 'Integrity Check Failed: File may be tampered.';
+            if (err.response && err.response.data instanceof Blob) {
+                const text = await err.response.data.text();
+                try {
+                    const json = JSON.parse(text);
+                    msg = json.msg || msg;
+                } catch (e) { /* ignore */ }
+            } else if (err.response?.data?.msg) {
+                msg = err.response.data.msg;
+            }
+            alert(msg);
+        }
+    }
+
+
+    const handleDelete = async (docId) => {
+        if (!window.confirm('Are you sure you want to delete this document?')) return;
+        try {
+            await api.delete(`/documents/${docId}`);
+            fetchDocs();
+        } catch (err) {
+            alert('Failed to delete document');
         }
     };
 
@@ -131,7 +152,7 @@ const PatientDashboard = () => {
                                     </td>
                                     <td className="p-4 text-slate-500">{new Date(doc.createdAt).toLocaleDateString()}</td>
                                     <td className="p-4 text-slate-500">Encrypted</td>
-                                    <td className="p-4 text-right">
+                                    <td className="p-4 text-right flex justify-end gap-2">
                                         <Button
                                             size="sm"
                                             variant="secondary"
@@ -139,6 +160,14 @@ const PatientDashboard = () => {
                                             icon={Download}
                                         >
                                             View
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="danger"
+                                            className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
+                                            onClick={() => handleDelete(doc._id)}
+                                        >
+                                            Delete
                                         </Button>
                                     </td>
                                 </tr>

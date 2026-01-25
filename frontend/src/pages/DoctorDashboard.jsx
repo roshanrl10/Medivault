@@ -35,6 +35,23 @@ const DoctorDashboard = () => {
         p.id.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const handleDownload = async (docId, filename) => {
+        try {
+            const response = await api.get(`/documents/${docId}`, {
+                responseType: 'blob',
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            alert('Integrity Check Failed: File may be tampered.');
+        }
+    };
+
     return (
         <div className="h-[calc(100vh-2rem)] p-4">
             <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 h-full flex overflow-hidden">
@@ -156,9 +173,19 @@ const DoctorDashboard = () => {
                                                         <p className="text-[11px] text-slate-500 mt-0.5">Uploaded: {new Date(doc.createdAt).toLocaleString()}</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded border border-slate-100">
-                                                    <Lock size={12} className="text-blue-500" />
-                                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Encrypted</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded border border-slate-100">
+                                                        <Lock size={12} className="text-blue-500" />
+                                                        <span className="text-[10px] font-bold text-slate-500 uppercase">Encrypted</span>
+                                                    </div>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="secondary"
+                                                        className="h-8 text-xs"
+                                                        onClick={() => handleDownload(doc._id, doc.originalName)}
+                                                    >
+                                                        View
+                                                    </Button>
                                                 </div>
                                             </div>
                                         ))}
