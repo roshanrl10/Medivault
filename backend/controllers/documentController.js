@@ -79,7 +79,11 @@ exports.shareDocument = async (req, res) => {
         if (!doc.sharedWith.includes(doctorId)) {
             doc.sharedWith.push(doctorId);
             await doc.save();
-            await logAction(req.user.id, req.user.email, 'DOC_SHARED', req, { docId: doc.id, doctorId });
+            await logAction(req.user.id, req.user.email, 'DOC_SHARED', req, {
+                docId: doc.id,
+                doctorId,
+                filename: doc.originalName
+            });
         }
 
         res.json(doc);

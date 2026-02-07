@@ -65,6 +65,7 @@ module.exports = function (passport) {
             await logAction(user.id, user.email, 'LOGIN_SUCCESS', req);
             return done(null, user);
         } catch (err) {
+            console.error('[Passport] Strategy Error:', err);
             return done(err);
         }
     }));
